@@ -1,0 +1,1 @@
+if('serviceWorker' in navigator) {window.addEventListener('load', () => {navigator.serviceWorker.register('/quotation-editor/sw.js', { scope: '/quotation-editor/' })})}
