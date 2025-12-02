@@ -4,6 +4,7 @@
       <i class="fa-solid fa-file-invoice-dollar text-emerald-500"></i>
       {{ pageTitle }}
     </h1>
+    <span class="text-slate-300 text-xs">v{{ version }}</span>
     <button v-if="currentView === 'edit'" @click="goHome" class="text-slate-400 hover:text-slate-600">
       <i class="fa-solid fa-xmark text-xl"></i>
     </button>
@@ -306,7 +307,7 @@
 
   <!-- 估價單預覽區域 (轉圖時使用，隱藏在畫面外) -->
   <div id="capture-area">
-    <div class="border-4 border-slate-800 p-4 relative min-h-[1476px]">
+    <div class="border-4 border-slate-800 p-4 relative min-h-[1279px]">
       <div class="text-center">
         <h1
           class="inline-block pb-4 text-4xl font-bold text-slate-900 tracking-widest border-b-4 border-double border-slate-900">
@@ -318,18 +319,18 @@
       </div>
 
       <div class="text-slate-800 text-lg">
-        <div class="w-1/2 border-b border-slate-300 py-3 flex justify-between items-center">
+        <div class="ps-3 w-1/2 border-b border-slate-300 py-3 flex justify-between items-center">
           <span class="font-bold text-2xl mr-2">
             {{ editingData.customerCompany }}
           </span>
           <span>台照</span>
         </div>
-        <div class="mb-2 grid grid-cols-2 gap-4">
-          <div class="border-b border-slate-300 py-3 flex items-center">
+        <div class="text-lg mb-2 grid grid-cols-2 gap-4">
+          <div class="ps-3 border-b border-slate-300 py-3 flex items-center">
             {{ formatDateToROC(editingData.date) }}
           </div>
 
-          <div class="border-b border-slate-300 py-3 flex items-center">
+          <div class="ps-3 border-b border-slate-300 py-3 flex items-center">
             <span class="font-bold mr-2">To. </span> {{ editingData.customerName }}
           </div>
         </div>
@@ -378,7 +379,7 @@
         </tbody>
         <tfoot>
           <tr class="bg-blue-50 border-t-2 border-blue-800">
-            <td colspan="6" class="pe-3 pb-4 font-bold border-r-2 border-blue-800">
+            <td colspan="6" class="ps-3 pb-4 font-bold border-r-2 border-blue-800">
               總計新台幣 {{ numberToChineseFinancial(editingTotal) }} 正
             </td>
             <td colspan="2" class="pb-4 text-right font-black text-xl text-slate-900">
@@ -402,7 +403,10 @@
 </template>
 
 <script setup>
-import { computed, ref, onMounted, watch } from 'vue'
+import { computed, ref, onMounted } from 'vue'
+import pkg from '../package.json'
+
+const version = pkg.version
 // --- State ---
 const currentView = ref("home"); // home, edit, archive, stamps
 const quotations = ref([]);
@@ -742,7 +746,7 @@ onMounted(() => {
 /* 估價單預覽專用樣式 (轉圖時使用) */
 #capture-area {
   background: white;
-  width: 1065px;
+  width: 923px;
   /* 固定寬度以保證圖片清晰 */
   position: absolute;
   left: -9999px;
