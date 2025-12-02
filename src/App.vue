@@ -221,6 +221,56 @@
         </div>
       </div>
     </div>
+    <div v-if="currentView === 'settings'" class="p-4 space-y-4">
+      <div class="bg-white rounded-xl shadow-sm p-4">
+        <h3 class="font-bold text-slate-700 mb-4 text-lg">資料備份與還原</h3>
+
+        <div class="space-y-4">
+          <div class="border border-slate-200 rounded-lg p-4">
+            <h4 class="font-medium text-slate-600 mb-2">
+              <i class="fa-solid fa-download mr-2 text-emerald-500"></i>
+              全部資料匯出
+            </h4>
+            <p class="text-sm text-slate-500 mb-3">
+              將所有估價單、封存記錄和印章匯出為 JSON 檔案，方便備份或轉移至其他裝置。
+            </p>
+            <button @click="exportAllData"
+              class="w-full bg-emerald-500 hover:bg-emerald-600 text-white py-3 rounded-lg font-bold transition-colors">
+              <i class="fa-solid fa-file-export mr-2"></i>
+              匯出全部資料
+            </button>
+          </div>
+
+          <div class="border border-slate-200 rounded-lg p-4">
+            <h4 class="font-medium text-slate-600 mb-2">
+              <i class="fa-solid fa-upload mr-2 text-blue-500"></i>
+              全部資料匯入
+            </h4>
+            <p class="text-sm text-slate-500 mb-3">
+              從先前匯出的 JSON 檔案還原資料。注意：這將覆蓋目前所有資料。
+            </p>
+            <label
+              class="w-full bg-blue-500 hover:bg-blue-600 text-white py-3 rounded-lg font-bold transition-colors flex items-center justify-center cursor-pointer">
+              <i class="fa-solid fa-file-import mr-2"></i>
+              選擇檔案匯入
+              <input type="file" accept=".json" @change="importAllData" class="hidden" />
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-amber-50 border border-amber-200 rounded-xl p-4">
+        <div class="flex items-start gap-3">
+          <i class="fa-solid fa-triangle-exclamation text-amber-500 mt-1"></i>
+          <div>
+            <h4 class="font-medium text-amber-700">注意事項</h4>
+            <p class="text-sm text-amber-600 mt-1">
+              匯入資料會完全取代現有資料，建議先匯出備份再進行匯入操作。
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
   </main>
 
   <button v-if="currentView === 'home'" @click="createNewQuotation"
@@ -245,6 +295,12 @@
       class="flex flex-col items-center w-full h-full justify-center">
       <i class="fa-solid fa-stamp text-lg mb-1"></i>
       印章
+    </button>
+    <button @click="currentView = 'settings'"
+      :class="currentView === 'settings' ? 'text-emerald-600' : 'text-slate-400'"
+      class="flex flex-col items-center w-full h-full justify-center">
+      <i class="fa-solid fa-gear text-lg mb-1"></i>
+      設定
     </button>
   </nav>
 
@@ -346,7 +402,7 @@
 </template>
 
 <script setup>
-import { computed, ref, onMounted } from 'vue'
+import { computed, ref, onMounted, watch } from 'vue'
 // --- State ---
 const currentView = ref("home"); // home, edit, archive, stamps
 const quotations = ref([]);
@@ -373,6 +429,7 @@ const pageTitle = computed(() => {
     edit: "編輯估價單",
     archive: "封存箱",
     stamps: "印章管理",
+    settings: "設定",
   };
   return map[currentView.value];
 });
@@ -569,6 +626,57 @@ function exportToImage() {
     });
   }, 100);
 };
+// --- Methods: Data Export/Import ---
+function exportAllData() {
+  const data = {
+    version: 1,
+    exportDate: new Date().toISOString(),
+    quotations: quotations.value,
+    stamps: stamps.value
+  };
+
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `估價單備份_${new Date().toISOString().split('T')[0]}.json`;
+  link.click();
+  URL.revokeObjectURL(url);
+
+  alert('資料匯出成功！');
+}
+function importAllData() {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const data = JSON.parse(e.target.result);
+
+      if (!data.quotations || !data.stamps) {
+        alert('檔案格式錯誤，請選擇正確的備份檔案。');
+        return;
+      }
+
+      if (!confirm('確定要匯入資料嗎？這將覆蓋目前所有的估價單和印章資料。')) {
+        return;
+      }
+
+      quotations.value = data.quotations;
+      stamps.value = data.stamps;
+      saveToLocalStorage();
+
+      alert('資料匯入成功！');
+      currentView.value = 'home';
+    } catch (error) {
+      console.error('匯入失敗:', error);
+      alert('檔案解析失敗，請確認檔案格式正確。');
+    }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
 // --- Utilities ---
 function formatNumber(num) {
   return (num || 0)
@@ -586,53 +694,6 @@ function formatDateToROC(dateStr) {
   return `${year}年${month}月${day}日`;
 };
 
-function numberToChinese(n) {
-  if (n === 0) return "零";
-  const digit = [
-    "零",
-    "壹",
-    "貳",
-    "參",
-    "肆",
-    "伍",
-    "陸",
-    "柒",
-    "捌",
-    "玖",
-  ];
-  const unit = ["", "拾", "佰", "仟"];
-  const bigUnit = ["", "萬", "億", "兆"];
-  let s = "";
-  let str = Math.floor(n).toString();
-  let len = str.length;
-  for (let i = 0; i < len; i++) {
-    let num = parseInt(str[i]);
-    let pos = len - i - 1;
-    let q = Math.floor(pos / 4);
-    let r = pos % 4;
-    if (num === 0) {
-      if (
-        r === 0 ||
-        (i < len - 1 && str[i + 1] !== "0")
-      ) {
-        // Handle trailing zeros logic simplified
-      }
-    } else {
-      s += digit[num] + unit[r];
-    }
-    if (r === 0 && q > 0) {
-      // Check if this block of 4 has value
-      // Simplified: Just add unit
-      s += bigUnit[q];
-    }
-  }
-  // Simple Regex cleanup for logic gaps in simple algo above
-  // Using a more robust library approach is better but keeping it dependency-free:
-  // Let's use a cleaner replacement approach for "Zero":
-  return n.toLocaleString("zh-Hans-CN-u-nu-hanidec");
-  // Fallback to native Chinese numbering if browser supports,
-  // but for strict uppercase "Financial Chinese" (大寫), let's use a standard mapping below:
-};
 // Override with Robust Financial Chinese Function
 function numberToChineseFinancial(n) {
   if (!/^(0|[1-9]\d*)(\.\d+)?$/.test(n))
