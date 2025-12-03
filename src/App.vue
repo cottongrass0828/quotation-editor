@@ -389,11 +389,13 @@
         </tfoot>
       </table>
 
-      <div class="flex justify-end items-end mt-16 relative">
+      <div class="flex justify-end items-end mt-8 relative">
         <div class="text-center w-40 relative">
-          <div class="border-b border-slate-800 pb-20 mb-2 font-bold text-slate-800"></div>
+          <div class="border-b border-slate-800 pt-14 pb-16 mb-2 font-bold text-slate-800">
+            僅供估價單使用
+          </div>
           <img v-if="selectedStampImage" :src="selectedStampImage"
-            class="absolute -top-12 left-1/2 transform -translate-x-1/2 w-32 h-32 object-contain opacity-80 mix-blend-multiply pointer-events-none" />
+            class="absolute -top-2 left-1/2 transform -translate-x-1/2 object-contain opacity-80 mix-blend-multiply pointer-events-none" />
         </div>
       </div>
     </div>
@@ -611,6 +613,11 @@ function deleteStamp(index) {
   }
 };
 // --- Methods: Export ---
+function getDPR() {
+  return window.devicePixelRatio && window.devicePixelRatio > 1
+    ? window.devicePixelRatio
+    : 1;
+}
 function exportToImage() {
   save();
   // Update DOM before capture
@@ -618,7 +625,7 @@ function exportToImage() {
     const element =
       document.getElementById("capture-area");
     html2canvas(element, {
-      scale: 1, // High resolution
+      scale: 5, // High resolution
       useCORS: true,
     }).then((canvas) => {
       const link = document.createElement("a");
