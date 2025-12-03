@@ -4,10 +4,12 @@
       <i class="fa-solid fa-file-invoice-dollar text-emerald-500"></i>
       {{ pageTitle }}
     </h1>
-    <span class="text-slate-300 text-xs">v{{ version }}</span>
-    <button v-if="currentView === 'edit'" @click="goHome" class="text-slate-400 hover:text-slate-600">
-      <i class="fa-solid fa-xmark text-xl"></i>
-    </button>
+    <div>
+      <span class="text-slate-300 text-xs mr-2">v{{ version }}</span>
+      <button v-if="currentView === 'edit'" @click="goHome" class="text-slate-400 hover:text-slate-600">
+        <i class="fa-solid fa-xmark text-xl"></i>
+      </button>
+    </div>
   </header>
 
   <main class="flex-1 overflow-y-auto p-4 pb-24 no-scrollbar">
@@ -41,9 +43,7 @@
 
     <div v-if="currentView === 'edit'" class="space-y-4">
       <div class="bg-white p-4 rounded-xl shadow-sm space-y-3">
-        <div class="text-center font-bold text-xl text-slate-800 border-b pb-2 mb-2">
-          估價單
-        </div>
+        <div class="font-bold text-slate-800 mb-3">估價單明細</div>
 
         <div>
           <label class="block text-xs font-bold text-slate-500 mb-1">客戶公司名稱</label>
@@ -52,8 +52,8 @@
             placeholder="輸入公司名稱" />
         </div>
 
-        <div class="grid grid-cols-2 gap-3">
-          <div>
+        <div class="grid grid-cols-3 gap-2">
+          <div class="col-span-2">
             <label class="block text-xs font-bold text-slate-500 mb-1">日期</label>
             <input type="date" v-model="editingData.date"
               class="w-full p-2 border border-slate-200 rounded focus:border-emerald-500 outline-none" />
@@ -61,8 +61,7 @@
           <div>
             <label class="block text-xs font-bold text-slate-500 mb-1">客戶名稱 (To:)</label>
             <input type="text" v-model="editingData.customerName"
-              class="w-full p-2 border border-slate-200 rounded focus:border-emerald-500 outline-none"
-              placeholder="例如：吳小姐" />
+              class="w-full p-2 border border-slate-200 rounded focus:border-emerald-500 outline-none" />
           </div>
         </div>
 
@@ -307,7 +306,7 @@
 
   <!-- 估價單預覽區域 (轉圖時使用，隱藏在畫面外) -->
   <div id="capture-area">
-    <div class="border-4 border-slate-800 p-4 relative min-h-[1279px]">
+    <div class="border-4 border-slate-800 p-4 relative min-h-[1108px]">
       <div class="text-center">
         <h1
           class="inline-block pb-4 text-4xl font-bold text-slate-900 tracking-widest border-b-4 border-double border-slate-900">
@@ -330,7 +329,7 @@
             {{ formatDateToROC(editingData.date) }}
           </div>
 
-          <div class="ps-3 border-b border-slate-300 py-3 flex items-center">
+          <div v-if="editingData.customerName" class="ps-3 border-b border-slate-300 py-3 flex items-center">
             <span class="font-bold mr-2">To. </span> {{ editingData.customerName }}
           </div>
         </div>
@@ -392,10 +391,9 @@
 
       <div class="flex justify-end items-end mt-16 relative">
         <div class="text-center w-40 relative">
-          <div class="border-b border-slate-800 pb-12 mb-2 font-bold text-slate-800"></div>
+          <div class="border-b border-slate-800 pb-20 mb-2 font-bold text-slate-800"></div>
           <img v-if="selectedStampImage" :src="selectedStampImage"
             class="absolute -top-12 left-1/2 transform -translate-x-1/2 w-32 h-32 object-contain opacity-80 mix-blend-multiply pointer-events-none" />
-          <div class="h-16"></div>
         </div>
       </div>
     </div>
@@ -746,7 +744,7 @@ onMounted(() => {
 /* 估價單預覽專用樣式 (轉圖時使用) */
 #capture-area {
   background: white;
-  width: 923px;
+  width: 800px;
   /* 固定寬度以保證圖片清晰 */
   position: absolute;
   left: -9999px;
