@@ -153,7 +153,7 @@
                             <td class="pb-4 border-e text-center">{{ item.unit }}</td>
                             <td class="pb-4 pe-3 border-e text-right">{{ formatNumber(item.price) }}</td>
                             <td class="pb-4 pe-3 border-e text-right font-bold">{{ formatNumber(item.qty * item.price)
-                            }}</td>
+                                }}</td>
                             <td class="pb-4 text-xs text-slate-400">{{ item.remark }}</td>
                         </tr>
                     </tbody>
@@ -169,7 +169,7 @@
                 </table>
                 <div class="flex justify-end items-end mt-8 relative">
                     <div class="text-center w-40 relative">
-                        <div class="border-b border-slate-800 pt-14 pb-16 mb-2 font-bold text-slate-800">僅供估價單使用</div>
+                        <div class="border-b border-slate-800 pt-12 pb-16 mb-2 font-bold text-slate-800">僅供估價單使用</div>
                         <img v-if="selectedStampImage" :src="selectedStampImage"
                             class="absolute -top-2 left-1/2 transform -translate-x-1/2 object-contain opacity-80 mix-blend-multiply pointer-events-none max-h-32" />
                     </div>
