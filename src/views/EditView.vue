@@ -2,6 +2,9 @@
     <div class="space-y-4">
         <AutoSaveNotify :show="showAutoSaveNotify" />
 
+        <ImagePreviewModal :show="showPreviewModal" :image-url="previewImageUrl" :file-name="previewFileName"
+            :company-name="previewCustomerCompany" @close="showPreviewModal = false" />
+
         <div class="bg-white p-4 rounded-xl shadow-sm space-y-3">
             <div class="font-bold text-slate-800 mb-3">估價單明細</div>
             <div>
@@ -98,7 +101,7 @@
             </button>
             <button @click="exportToImage"
                 class="bg-blue-500 text-white py-3 rounded-lg font-bold shadow-lg shadow-blue-200 hover:bg-blue-600 active:scale-95 transition-all">
-                <i class="fa-solid fa-image mr-1"></i> 轉成圖檔
+                <i class="fa-solid fa-share-nodes mr-1"></i>分享 / 下載
             </button>
             <button @click="archiveQuotation"
                 class="bg-slate-200 text-slate-600 py-3 rounded-lg font-bold hover:bg-slate-300 active:scale-95 transition-all col-span-2">
@@ -150,7 +153,7 @@
                             <td class="pb-4 border-e text-center">{{ item.unit }}</td>
                             <td class="pb-4 pe-3 border-e text-right">{{ formatNumber(item.price) }}</td>
                             <td class="pb-4 pe-3 border-e text-right font-bold">{{ formatNumber(item.qty * item.price)
-                                }}</td>
+                            }}</td>
                             <td class="pb-4 text-xs text-slate-400">{{ item.remark }}</td>
                         </tr>
                     </tbody>
@@ -181,6 +184,7 @@ import { ref, computed, watch } from 'vue';
 import html2canvas from 'html2canvas';
 import { formatNumber, formatDateToROC, numberToChineseFinancial } from '../utils/helpers';
 import AutoSaveNotify from '../components/AutoSaveNotify.vue';
+import ImagePreviewModal from '../components/ImagePreviewModal.vue';
 
 defineOptions({
     name: 'EditView'
@@ -192,6 +196,9 @@ const emit = defineEmits(['save', 'archive', 'back']);
 
 // 初始化資料深拷貝，避免直接改動 prop
 const localData = ref(JSON.parse(JSON.stringify(props.initialData)));
+// 控制預覽視窗的狀態
+const showPreviewModal = ref(false);
+const previewImageUrl = ref('');
 
 // 計算總額
 const editingTotal = computed(() => {
@@ -202,6 +209,16 @@ const editingTotal = computed(() => {
 const selectedStampImage = computed(() => {
     const s = props.stamps.find(s => s.id === localData.value.stampId);
     return s ? s.image : null;
+});
+
+const previewFileName = computed(() => {
+    const company = localData.value.customerCompany || '未命名';
+    const date = localData.value.date;
+    return `估價單-${company}-${date}.png`;
+});
+
+const previewCustomerCompany = computed(() => {
+    return localData.value.customerCompany || '未命名';
 });
 
 // CRUD 操作
@@ -254,16 +271,30 @@ watch(localData, (newVal) => {
 
 // --- 截圖功能 ---
 const exportToImage = () => {
+    // 1. 先儲存資料
     save(true);
+
+    // 2. 清空舊的預覽圖，並打開彈窗顯示載入中
+    previewImageUrl.value = '';
+    showPreviewModal.value = true;
+
+    // 3. 等待 DOM 更新後開始截圖
     setTimeout(() => {
         const element = document.getElementById("capture-area");
         if (!element) return;
-        html2canvas(element, { scale: 3, useCORS: true }).then((canvas) => {
-            const link = document.createElement("a");
-            link.download = `估價單-${localData.value.customerCompany}-${localData.value.date}.png`;
-            link.href = canvas.toDataURL();
-            link.click();
-        });
+
+        // 4. 使用 html2canvas
+        html2canvas(element, { scale: 3, useCORS: true })
+            .then((canvas) => {
+                // 5. 截圖成功，獲取圖片的 Data URL
+                const dataUrl = canvas.toDataURL("image/png");
+                // 6. 將 URL 設定給狀態，這會更新預覽視窗中的圖片
+                previewImageUrl.value = dataUrl;
+            }).catch(err => {
+                console.error("截圖失敗:", err);
+                alert("產生圖片失敗，請稍後再試。(如果持續失敗，可能是色彩格式相容性問題)");
+                showPreviewModal.value = false; // 關閉視窗
+            });
     }, 100);
 };
 </script>
