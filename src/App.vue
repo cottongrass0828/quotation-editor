@@ -278,6 +278,12 @@
     <i class="fa-solid fa-plus"></i>
   </button>
 
+  <div v-if="showAutoSaveNotify"
+    class="fixed top-20 right-4 bg-slate-800/80 backdrop-blur text-white text-xs px-4 py-2 rounded-full shadow-lg z-50 flex items-center gap-2 animate-fade-in transition-all">
+    <i class="fa-solid fa-cloud-arrow-up text-emerald-400"></i>
+    <span>已自動儲存</span>
+  </div>
+
   <nav v-if="currentView !== 'edit'"
     class="bg-white border-t border-slate-200 h-16 shrink-0 flex justify-around items-center text-xs font-medium z-10 pb-safe">
     <button @click="currentView = 'home'"
@@ -403,7 +409,7 @@
 </template>
 
 <script setup>
-import { computed, ref, onMounted } from 'vue'
+import { computed, ref, watch, onMounted } from 'vue'
 import pkg from '../package.json'
 
 const version = pkg.version
@@ -735,6 +741,32 @@ onMounted(() => {
   const savedStamps = localStorage.getItem("stamps");
   if (savedStamps) stamps.value = JSON.parse(savedStamps);
 });
+
+// --- Auto Save Logic ---
+const showAutoSaveNotify = ref(false);
+let autoSaveTimer = null;
+
+// 監聽 editingData 的深度變化
+watch(editingData, (newVal, oldVal) => {
+  // 只有在編輯模式且有 ID 時才執行 (避免初始化時觸發)
+  if (currentView.value !== 'edit' || !editingData.value.id) return;
+
+  // 清除舊的計時器 (防抖動機制)
+  if (autoSaveTimer) clearTimeout(autoSaveTimer);
+
+  // 設定新的計時器，1秒後執行儲存
+  autoSaveTimer = setTimeout(() => {
+    save(); // 呼叫現有的儲存邏輯
+
+    // 顯示通知
+    showAutoSaveNotify.value = true;
+
+    // 2秒後隱藏通知
+    setTimeout(() => {
+      showAutoSaveNotify.value = false;
+    }, 2000);
+  }, 1000);
+}, { deep: true });
 </script>
 
 <style scoped>
