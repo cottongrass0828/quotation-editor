@@ -1,7 +1,7 @@
 {
     "name": "專業估價單助手",
     "short_name": "估價單",
-    "start_url": "./quotation-editor/",
+    "start_url": ".",
     "display": "standalone",
     "background_color": "#f8fafc",
     "theme_color": "#10b981",
