@@ -278,13 +278,13 @@
     <i class="fa-solid fa-plus"></i>
   </button>
 
-  <nav
+  <nav v-if="currentView !== 'edit'"
     class="bg-white border-t border-slate-200 h-16 shrink-0 flex justify-around items-center text-xs font-medium z-10 pb-safe">
     <button @click="currentView = 'home'"
       :class="currentView === 'home' || currentView === 'edit' ? 'text-emerald-600' : 'text-slate-400'"
       class="flex flex-col items-center w-full h-full justify-center">
       <i class="fa-solid fa-list-ul text-lg mb-1"></i>
-      列表
+      清單
     </button>
     <button @click="currentView = 'archive'" :class="currentView === 'archive' ? 'text-emerald-600' : 'text-slate-400'"
       class="flex flex-col items-center w-full h-full justify-center">
