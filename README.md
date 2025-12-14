@@ -1,9 +1,10 @@
 # 專業估價單助手 (Quotation Generator)
-![清單](./sample/image.png)
-![編輯清單](./sample/edit_quotation.png)
 
 一個基於 Vue 3 + Vite + Tailwind CSS 開發的輕量級估價單產生器。
 專為行動裝置優先設計 (Mobile-First)，資料完全儲存於瀏覽器端 (LocalStorage)，無需架設後端伺服器即可使用。
+
+![清單](./sample/image.png)
+![編輯清單](./sample/edit_quotation.png)
 
 ## ✨ 主要功能
 * **📝 估價單管理**：建立、編輯、刪除估價單，支援商品明細增刪。
