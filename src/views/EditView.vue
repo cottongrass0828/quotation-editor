@@ -56,7 +56,7 @@
                     <div class="col-span-6"><input type="text" v-model="item.remark" placeholder="備註"
                             class="w-full p-1 text-sm border-b border-slate-200 focus:border-emerald-500 outline-none text-slate-500" />
                     </div>
-                    <div class="col-span-2">
+                    <div class="col-span-3">
                         <label class="text-[10px] text-slate-400 block">數量</label>
                         <input type="number" v-model.number="item.qty"
                             class="w-full p-1 font-mono text-center border rounded border-slate-200" />
@@ -71,7 +71,12 @@
                         <input type="number" v-model.number="item.price"
                             class="w-full p-1 font-mono text-right border rounded border-slate-200" />
                     </div>
-                    <div class="col-span-4 text-right">
+                    <div class="col-span-3">
+                        <label class="text-[10px] text-slate-400 block">折讓</label>
+                        <input type="number" v-model.number="item.discount" min="0"
+                            class="w-full p-1 font-mono text-right border rounded border-slate-200" />
+                    </div>
+                    <div class="col-span-11 text-right">
                         <label class="text-[10px] text-slate-400 block">金額</label>
                         <div class="font-bold text-emerald-600 pt-1 font-mono">{{ formatNumber(itemSubtotal(item)) }}
                         </div>
@@ -80,13 +85,6 @@
                         <button @click="removeItem(index)" class="text-red-400 hover:text-red-600 pb-1"><i
                                 class="fa-solid fa-trash"></i></button>
                     </div>
-                    <div class="col-span-7"></div>
-                    <div class="col-span-3">
-                        <label class="text-[10px] text-slate-400 block">折讓</label>
-                        <input type="number" v-model.number="item.discount" min="0"
-                            class="w-full p-1 font-mono text-right border rounded border-slate-200" />
-                    </div>
-                    <div class="col-span-2"></div>
                 </div>
             </div>
         </div>
@@ -160,7 +158,7 @@
                             <td class="pb-4 border-e text-center">{{ item.unit }}</td>
                             <td class="pb-4 pe-3 border-e text-right">{{ formatNumber(item.price) }}</td>
                             <td class="pb-4 pe-3 border-e text-right font-bold">{{ formatNumber(itemSubtotal(item))
-                                }}</td>
+                            }}</td>
                             <td class="pb-4 text-xs text-slate-400">{{ item.remark }}</td>
                         </tr>
                     </tbody>
