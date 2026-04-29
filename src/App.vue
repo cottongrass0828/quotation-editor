@@ -77,7 +77,7 @@ function createNewQuotation() {
     date: new Date().toISOString().split("T")[0],
     customerName: "",
     stampId: stamps.value.length > 0 ? stamps.value[0].id : "",
-    items: [{ name: "", spec: "", qty: 1, unit: "箱", price: 0, remark: "" }],
+    items: [{ name: "", spec: "", qty: 1, unit: "箱", price: 0, discount: 0, remark: "" }],
     isArchived: false,
     totalAmount: 0,
   };

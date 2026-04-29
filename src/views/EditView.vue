@@ -73,13 +73,20 @@
                     </div>
                     <div class="col-span-4 text-right">
                         <label class="text-[10px] text-slate-400 block">金額</label>
-                        <div class="font-bold text-emerald-600 pt-1 font-mono">{{ formatNumber(item.qty * item.price) }}
+                        <div class="font-bold text-emerald-600 pt-1 font-mono">{{ formatNumber(itemSubtotal(item)) }}
                         </div>
                     </div>
                     <div class="col-span-1 flex items-end justify-center">
                         <button @click="removeItem(index)" class="text-red-400 hover:text-red-600 pb-1"><i
                                 class="fa-solid fa-trash"></i></button>
                     </div>
+                    <div class="col-span-7"></div>
+                    <div class="col-span-3">
+                        <label class="text-[10px] text-slate-400 block">折讓</label>
+                        <input type="number" v-model.number="item.discount" min="0"
+                            class="w-full p-1 font-mono text-right border rounded border-slate-200" />
+                    </div>
+                    <div class="col-span-2"></div>
                 </div>
             </div>
         </div>
@@ -152,12 +159,19 @@
                             <td class="pb-4 border-e text-center">{{ item.qty }}</td>
                             <td class="pb-4 border-e text-center">{{ item.unit }}</td>
                             <td class="pb-4 pe-3 border-e text-right">{{ formatNumber(item.price) }}</td>
-                            <td class="pb-4 pe-3 border-e text-right font-bold">{{ formatNumber(item.qty * item.price)
+                            <td class="pb-4 pe-3 border-e text-right font-bold">{{ formatNumber(itemSubtotal(item))
                                 }}</td>
                             <td class="pb-4 text-xs text-slate-400">{{ item.remark }}</td>
                         </tr>
                     </tbody>
                     <tfoot>
+                        <tr v-if="totalDiscount > 0" class="border-b border-slate-200">
+                            <td colspan="6" class="ps-3 pb-2 text-right text-slate-500">折讓合計</td>
+                            <td colspan="2" class="pb-2 pe-3 text-right font-mono text-slate-600">
+                                - NT$ {{ formatNumber(totalDiscount) }}
+                            </td>
+                            <td></td>
+                        </tr>
                         <tr class="bg-blue-50 border-t-2 border-blue-800">
                             <td colspan="6" class="ps-3 pb-4 font-bold border-r-2 border-blue-800">總計新台幣 {{
                                 numberToChineseFinancial(editingTotal) }} 正</td>
@@ -196,13 +210,23 @@ const emit = defineEmits(['save', 'archive', 'back']);
 
 // 初始化資料深拷貝，避免直接改動 prop
 const localData = ref(JSON.parse(JSON.stringify(props.initialData)));
+// 舊資料兼容：補上 discount 欄位
+localData.value.items.forEach(it => { it.discount ??= 0; });
 // 控制預覽視窗的狀態
 const showPreviewModal = ref(false);
 const previewImageUrl = ref('');
 
-// 計算總額
+// 單筆折後小計
+const itemSubtotal = (item) => (item.qty * item.price) - (item.discount || 0);
+
+// 折讓合計
+const totalDiscount = computed(() =>
+    localData.value.items.reduce((s, it) => s + (it.discount || 0), 0)
+);
+
+// 計算總額（折後）
 const editingTotal = computed(() => {
-    return localData.value.items.reduce((sum, item) => sum + item.qty * item.price, 0);
+    return localData.value.items.reduce((sum, item) => sum + itemSubtotal(item), 0);
 });
 
 // 計算選中的印章圖片
@@ -223,7 +247,7 @@ const previewCustomerCompany = computed(() => {
 
 // CRUD 操作
 const addItem = () => {
-    localData.value.items.push({ name: "", spec: "", qty: 1, unit: "箱", price: 0, remark: "" });
+    localData.value.items.push({ name: "", spec: "", qty: 1, unit: "箱", price: 0, discount: 0, remark: "" });
 };
 const removeItem = (index) => {
     localData.value.items.splice(index, 1);
