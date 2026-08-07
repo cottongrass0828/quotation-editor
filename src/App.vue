@@ -55,7 +55,6 @@ import pkg from '../package.json'; // 記得確認 package.json 路徑
 import { storageGet, storageSet } from './services/storage';
 import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
-import { Share } from '@capacitor/share';
 import { App as CapApp } from '@capacitor/app';
 
 // Components
@@ -206,7 +205,11 @@ async function exportAllData() {
   const json = JSON.stringify(data, null, 2);
 
   if (Capacitor.isNativePlatform()) {
-    const fileName = 'quotation-backup.json';
+    // 每次匯出用時間戳記命名，避免覆蓋掉舊的備份檔
+    const pad = (n) => String(n).padStart(2, '0');
+    const now = new Date();
+    const stamp = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
+    const fileName = `估價單備份_${stamp}.json`;
     try {
       await Filesystem.writeFile({
         path: fileName,
@@ -214,12 +217,8 @@ async function exportAllData() {
         directory: Directory.Documents,
         encoding: Encoding.UTF8,
       });
-      alert(`資料已備份至「文件」資料夾：${fileName}`);
       const { uri } = await Filesystem.getUri({ path: fileName, directory: Directory.Documents });
-      const { value: shareable } = await Share.canShare();
-      if (shareable) {
-        await Share.share({ title: '估價單資料備份', url: uri });
-      }
+      alert(`資料已備份，實際路徑：\n${uri}\n\n若在「檔案」App 找不到，請切換到資料夾檢視（而非分類檢視），進「內部儲存空間 → Documents」查看。`);
     } catch (err) {
       console.error('匯出失敗:', err);
       alert('資料匯出失敗，請稍後再試。');
