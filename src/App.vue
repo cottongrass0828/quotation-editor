@@ -98,6 +98,12 @@ async function dismissMigrationGuide() {
 }
 
 onMounted(async () => {
+  // 及早開始下載估價單截圖會用到的字重，避免使用者匯出時字型還沒載入完成
+  // （不 await，背景下載即可，不要拖慢開機畫面）
+  document.fonts?.load('400 1em "Noto Sans TC"');
+  document.fonts?.load('500 1em "Noto Sans TC"');
+  document.fonts?.load('700 1em "Noto Sans TC"');
+
   const savedQ = await storageGet("quotations");
   if (savedQ) quotations.value = JSON.parse(savedQ);
   const savedS = await storageGet("stamps");
