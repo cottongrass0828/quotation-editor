@@ -192,7 +192,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, nextTick } from 'vue';
 import html2canvas from 'html2canvas';
 import { formatNumber, formatDateToROC, numberToChineseFinancial } from '../utils/helpers';
 import AutoSaveNotify from '../components/AutoSaveNotify.vue';
@@ -300,10 +300,17 @@ const exportToImage = () => {
     previewImageUrl.value = '';
     showPreviewModal.value = true;
 
-    // 3. 等待 DOM 更新後開始截圖
-    setTimeout(() => {
+    // 3. 等待 DOM 更新，並確認字型已載入完成才截圖
+    //    （原本用固定 100ms 延遲賭字型會及時切換，但原生 App 冷啟動時
+    //    Noto Sans TC 常常還沒下載完，html2canvas 會截到系統預設字型，
+    //    造成行高不同、版面跑掉）
+    nextTick(async () => {
         const element = document.getElementById("capture-area");
         if (!element) return;
+
+        if (document.fonts?.ready) {
+            await document.fonts.ready;
+        }
 
         // 4. 使用 html2canvas
         html2canvas(element, { scale: 3, useCORS: true })
@@ -317,7 +324,7 @@ const exportToImage = () => {
                 alert("產生圖片失敗，請稍後再試。(如果持續失敗，可能是色彩格式相容性問題)");
                 showPreviewModal.value = false; // 關閉視窗
             });
-    }, 100);
+    });
 };
 </script>
 

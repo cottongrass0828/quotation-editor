@@ -1,0 +1,8 @@
+{
+  "appId": "io.github.cottongrass0828.quotation",
+  "appName": "專業估價單助手",
+  "webDir": "dist",
+  "server": {
+    "androidScheme": "https"
+  }
+}

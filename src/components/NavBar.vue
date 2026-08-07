@@ -35,3 +35,10 @@ defineProps(['current']);
 
 defineEmits(['change']);
 </script>
+
+<style scoped>
+/* Android 手勢列 (gesture bar) 安全區域，Web/PWA 環境 env() 無值時不影響版面 */
+.pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+}
+</style>
