@@ -54,6 +54,7 @@ import { computed } from 'vue';
 import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
+import { Media } from '@capacitor-community/media';
 
 defineOptions({
     name: 'ImagePreviewModal'
@@ -125,13 +126,27 @@ const handleShare = async () => {
     }
 };
 
-// 原生環境：WebView 不支援 <a download>，改寫入「文件」資料夾
+// Android 端 Media.savePhoto 必須指定相簿，找不到就建立一個專用相簿，並回傳其 identifier
+const ALBUM_NAME = '專業估價單助手';
+const ensureAlbum = async () => {
+    const { albums } = await Media.getAlbums();
+    const existing = albums.find((a) => a.name === ALBUM_NAME);
+    if (existing) return existing.identifier;
+
+    await Media.createAlbum({ name: ALBUM_NAME }).catch(() => { }); // 若剛好已存在（競態）就忽略錯誤
+    const { albums: refreshed } = await Media.getAlbums();
+    return refreshed.find((a) => a.name === ALBUM_NAME)?.identifier;
+};
+
+// 原生環境：WebView 不支援 <a download>，改用 Media.savePhoto 寫入系統相簿
 const handleDownload = async () => {
     if (!props.imageUrl) return;
-    const path = props.fileName || 'quotation.png';
     try {
-        await Filesystem.writeFile({ path, data: toBase64(props.imageUrl), directory: Directory.Documents });
-        alert(`已儲存至「文件」資料夾：${path}`);
+        const albumIdentifier = await ensureAlbum();
+        if (!albumIdentifier) throw new Error('無法建立相簿');
+        const fileName = (props.fileName || 'quotation.png').replace(/\.[^.]+$/, '');
+        await Media.savePhoto({ path: props.imageUrl, albumIdentifier, fileName });
+        alert('已儲存至「相簿 / Photos」。');
     } catch (error) {
         console.error('儲存失敗:', error);
         alert('儲存失敗，請稍後再試。');
