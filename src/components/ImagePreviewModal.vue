@@ -30,11 +30,16 @@
                         分享圖片 (LINE)
                     </button>
 
-                    <a :href="imageUrl" :download="fileName"
+                    <a v-if="!isNative" :href="imageUrl" :download="fileName"
                         class="block text-center w-full py-3 bg-white border border-slate-200 text-slate-700 rounded-lg font-bold hover:bg-slate-50 transition-colors active:scale-95">
                         <i class="fa-solid fa-download mr-1"></i>
                         下載到相簿
                     </a>
+                    <button v-else @click="handleDownload"
+                        class="w-full py-3 bg-white border border-slate-200 text-slate-700 rounded-lg font-bold hover:bg-slate-50 transition-colors active:scale-95">
+                        <i class="fa-solid fa-download mr-1"></i>
+                        下載到相簿
+                    </button>
                 </div>
                 <p class="text-xs text-center text-slate-400">
                     小提示：如果分享失敗，您可以點擊下載，或直接長按上方圖片進行儲存。
@@ -46,6 +51,9 @@
 
 <script setup>
 import { computed } from 'vue';
+import { Capacitor } from '@capacitor/core';
+import { Filesystem, Directory } from '@capacitor/filesystem';
+import { Share } from '@capacitor/share';
 
 defineOptions({
     name: 'ImagePreviewModal'
@@ -55,13 +63,39 @@ const props = defineProps(['show', 'imageUrl', 'fileName', 'companyName']);
 
 const emit = defineEmits(['close']);
 
-// 檢查瀏覽器是否支援 Web Share API 且能分享檔案
+const isNative = Capacitor.isNativePlatform();
+
+// Android WebView 不支援 navigator.share，原生環境一律視為可分享
 const canShare = computed(() => {
-    return navigator.share && navigator.canShare;
+    if (isNative) return true;
+    return !!(navigator.share && navigator.canShare);
 });
+
+// dataURL 轉純 base64（去除 data:image/png;base64, 前綴），供 Filesystem 寫檔使用
+const toBase64 = (dataUrl) => dataUrl.split(',')[1];
 
 const handleShare = async () => {
     if (!props.imageUrl) return;
+
+    if (isNative) {
+        const path = props.fileName || 'quotation.png';
+        try {
+            await Filesystem.writeFile({ path, data: toBase64(props.imageUrl), directory: Directory.Cache });
+            const { uri } = await Filesystem.getUri({ path, directory: Directory.Cache });
+            await Share.share({
+                title: '估價單',
+                text: `這是${props.companyName}的估價單，請查收。`,
+                url: uri,
+            });
+        } catch (error) {
+            console.error('分享失敗:', error);
+            alert('分享失敗，請嘗試使用下載按鈕。');
+        } finally {
+            // 分享後清除暫存檔，避免快取殘留累積
+            await Filesystem.deleteFile({ path, directory: Directory.Cache }).catch(() => { });
+        }
+        return;
+    }
 
     try {
         // 1. 將 Data URL 轉換為 Blob 物件
@@ -88,6 +122,19 @@ const handleShare = async () => {
         if (error.name !== 'AbortError') {
             alert('分享失敗，請嘗試使用下載按鈕，或長按圖片儲存。');
         }
+    }
+};
+
+// 原生環境：WebView 不支援 <a download>，改寫入「文件」資料夾
+const handleDownload = async () => {
+    if (!props.imageUrl) return;
+    const path = props.fileName || 'quotation.png';
+    try {
+        await Filesystem.writeFile({ path, data: toBase64(props.imageUrl), directory: Directory.Documents });
+        alert(`已儲存至「文件」資料夾：${path}`);
+    } catch (error) {
+        console.error('儲存失敗:', error);
+        alert('儲存失敗，請稍後再試。');
     }
 };
 </script>

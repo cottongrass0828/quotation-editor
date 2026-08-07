@@ -1,5 +1,30 @@
 <template>
-  <div class="flex flex-col h-screen bg-slate-50 text-slate-800 font-sans">
+  <div v-if="isLoading" class="flex flex-col h-screen items-center justify-center bg-slate-50 text-slate-400">
+    <i class="fa-solid fa-spinner fa-spin text-3xl mb-2"></i>
+    載入中...
+  </div>
+
+  <div v-else class="flex flex-col h-screen bg-slate-50 text-slate-800 font-sans">
+
+    <div v-if="showMigrationGuide"
+      class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm">
+      <div class="bg-white rounded-xl shadow-2xl max-w-md w-full p-5 space-y-4">
+        <h3 class="text-lg font-bold text-slate-800">
+          <i class="fa-solid fa-circle-info text-emerald-500 mr-1"></i>
+          歡迎使用 App 版
+        </h3>
+        <p class="text-sm text-slate-600 leading-relaxed">
+          此 App 版使用獨立的儲存空間，<strong>不會自動帶入</strong>您先前在網頁版（瀏覽器 / 加到主畫面）建立的估價單資料。
+        </p>
+        <p class="text-sm text-slate-600 leading-relaxed">
+          若您先前已有資料，請先到<strong>網頁版</strong>的「設定」頁匯出 JSON 備份，再回到本 App 的「設定」頁匯入即可。
+        </p>
+        <button @click="dismissMigrationGuide"
+          class="w-full bg-emerald-500 hover:bg-emerald-600 text-white py-3 rounded-lg font-bold transition-colors">
+          我知道了
+        </button>
+      </div>
+    </div>
 
     <Header :title="pageTitle" :version="version" :show-close="currentView === 'edit'" @close="currentView = 'home'" />
 
@@ -27,6 +52,11 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import pkg from '../package.json'; // 記得確認 package.json 路徑
+import { storageGet, storageSet } from './services/storage';
+import { Capacitor } from '@capacitor/core';
+import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
+import { Share } from '@capacitor/share';
+import { App as CapApp } from '@capacitor/app';
 
 // Components
 import Header from './components/Header.vue';
@@ -42,6 +72,9 @@ const currentView = ref("home");
 const quotations = ref([]);
 const stamps = ref([]);
 const editingData = ref(null); // 傳遞給 EditView 的資料
+const isLoading = ref(true);
+const showMigrationGuide = ref(false);
+const MIGRATION_GUIDE_KEY = "migrationGuideShown";
 
 const pageTitle = computed(() => {
   const map = {
@@ -55,16 +88,41 @@ const pageTitle = computed(() => {
 });
 
 // --- Data Persistence ---
-function saveToLocalStorage() {
-  localStorage.setItem("quotations", JSON.stringify(quotations.value));
-  localStorage.setItem("stamps", JSON.stringify(stamps.value));
+async function saveToLocalStorage() {
+  await storageSet("quotations", JSON.stringify(quotations.value));
+  await storageSet("stamps", JSON.stringify(stamps.value));
 }
 
-onMounted(() => {
-  const savedQ = localStorage.getItem("quotations");
+async function dismissMigrationGuide() {
+  showMigrationGuide.value = false;
+  await storageSet(MIGRATION_GUIDE_KEY, "1");
+}
+
+onMounted(async () => {
+  const savedQ = await storageGet("quotations");
   if (savedQ) quotations.value = JSON.parse(savedQ);
-  const savedS = localStorage.getItem("stamps");
+  const savedS = await storageGet("stamps");
   if (savedS) stamps.value = JSON.parse(savedS);
+
+  if (Capacitor.isNativePlatform()) {
+    // 原生環境的儲存空間與網頁版 Chrome localStorage 互不相通，
+    // 首次啟動且尚無任何資料時，提示使用者改用 JSON 匯出/匯入搬移舊資料（僅顯示一次）。
+    if (quotations.value.length === 0 && stamps.value.length === 0) {
+      const seen = await storageGet(MIGRATION_GUIDE_KEY);
+      if (!seen) showMigrationGuide.value = true;
+    }
+
+    // Android 實體/手勢返回鍵：編輯頁與子頁面先回首頁，首頁再按才離開 App
+    CapApp.addListener("backButton", () => {
+      if (currentView.value !== "home") {
+        currentView.value = "home";
+      } else {
+        CapApp.exitApp();
+      }
+    });
+  }
+
+  isLoading.value = false;
 });
 
 // --- Action Handlers ---
@@ -93,59 +151,83 @@ function editQuotation(id) {
 }
 
 // Save from EditView (包含自動儲存觸發)
-function saveQuotationData(newData) {
+async function saveQuotationData(newData) {
   const index = quotations.value.findIndex(q => q.id === newData.id);
   if (index > -1) {
     quotations.value[index] = newData;
   } else {
     quotations.value.push(newData);
   }
-  saveToLocalStorage();
+  await saveToLocalStorage();
 }
 
 // Archive from EditView
-function archiveQuotationData(newData) {
+async function archiveQuotationData(newData) {
   const index = quotations.value.findIndex(q => q.id === newData.id);
   if (index > -1) {
     quotations.value[index] = newData;
   } else {
     quotations.value.push(newData);
   }
-  saveToLocalStorage();
+  await saveToLocalStorage();
   currentView.value = "home";
 }
 
 // Restore
-function restoreQuotation(id) {
+async function restoreQuotation(id) {
   const q = quotations.value.find(q => q.id === id);
   if (q) {
     q.isArchived = false;
-    saveToLocalStorage();
+    await saveToLocalStorage();
   }
 }
 
 // Stamps
-function addStamp(stampObj) {
+async function addStamp(stampObj) {
   stamps.value.push(stampObj);
-  saveToLocalStorage();
+  await saveToLocalStorage();
 }
 
-function deleteStamp(index) {
+async function deleteStamp(index) {
   if (confirm("確定刪除此印章？")) {
     stamps.value.splice(index, 1);
-    saveToLocalStorage();
+    await saveToLocalStorage();
   }
 }
 
 // Import / Export
-function exportAllData() {
+async function exportAllData() {
   const data = {
     version: 1,
     exportDate: new Date().toISOString(),
     quotations: quotations.value,
     stamps: stamps.value
   };
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const json = JSON.stringify(data, null, 2);
+
+  if (Capacitor.isNativePlatform()) {
+    const fileName = 'quotation-backup.json';
+    try {
+      await Filesystem.writeFile({
+        path: fileName,
+        data: json,
+        directory: Directory.Documents,
+        encoding: Encoding.UTF8,
+      });
+      alert(`資料已備份至「文件」資料夾：${fileName}`);
+      const { uri } = await Filesystem.getUri({ path: fileName, directory: Directory.Documents });
+      const { value: shareable } = await Share.canShare();
+      if (shareable) {
+        await Share.share({ title: '估價單資料備份', url: uri });
+      }
+    } catch (err) {
+      console.error('匯出失敗:', err);
+      alert('資料匯出失敗，請稍後再試。');
+    }
+    return;
+  }
+
+  const blob = new Blob([json], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
@@ -155,7 +237,7 @@ function exportAllData() {
   alert('資料匯出成功！');
 }
 
-function importAllData(data) {
+async function importAllData(data) {
   if (!data.quotations || !data.stamps) {
     alert('檔案格式錯誤');
     return;
@@ -164,7 +246,7 @@ function importAllData(data) {
 
   quotations.value = data.quotations;
   stamps.value = data.stamps;
-  saveToLocalStorage();
+  await saveToLocalStorage();
   alert('資料匯入成功！');
   currentView.value = 'home';
 }
