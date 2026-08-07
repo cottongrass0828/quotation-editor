@@ -58,6 +58,7 @@ npx cap open android  # 用 Android Studio 開啟原生專案
 - Path alias `@` → `./src` (見 [vite.config.js](vite.config.js) 與 [jsconfig.json](jsconfig.json))。
 - `npm run deploy` 會直接遞增 patch 版本並 commit-less 寫入 `package.json`，再用 `gh-pages` 推 `dist/`。執行前確認 working tree 乾淨。
 - `npm run build:android` → `npx cap sync android`，將 `dist/` 複製進 `android/app/src/main/assets/public`。`android/` 目錄是 `npx cap add android` 產生的原生專案骨架，簽章 keystore 相關細節見 [README.md](README.md) 的「Android App (Capacitor)」章節，**不要**把 keystore 或密碼提交進 git。
+- **Web/PWA（`npm run deploy`）與 Android App 是同一份 `src/` 但要分開手動建置發布**，沒有自動化流程互相帶動。修完 bug 或加完功能 commit 後，記得提醒使用者兩邊都要各自重新發布：`npm run deploy` 推網頁，以及 `npm run build:android` → Android Studio 重新產生簽名 APK → `adb install -r` 裝回手機，否則會有一邊吃到修正、另一邊沒吃到的版本落差。
 
 ### 在地化工具
 [src/utils/helpers.js](src/utils/helpers.js) 提供台灣特定格式：`formatDateToROC` (轉民國年)、`numberToChineseFinancial` (中文財務數字「壹貳參…元」)、`formatNumber` (千分位)。表單顯示金額/日期請優先沿用，避免重新實作。

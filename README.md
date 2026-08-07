@@ -71,6 +71,14 @@ npx cap open android    # 用 Android Studio 開啟，即可執行到模擬器/�
 `npm run build:android` 會用 `CAP_BUILD=1` 讓 `vite.config.js` 改用相對路徑（`./`）而非 GitHub Pages 的
 `/quotation-editor/`，並不影響一般 `npm run build` / `npm run deploy` 的 GitHub Pages 部署行為。
 
+### ⚠️ commit 後記得兩邊都要更新
+
+Web/PWA 跟 Android App 雖然共用同一份程式碼，但**發布是兩個完全獨立的手動步驟**，不會互相帶動。
+每次改完 bug 或功能、commit 之後，記得兩邊都要各自重新發布，否則會有一邊吃到修正、另一邊沒吃到：
+
+* **網頁版**：`npm run deploy`
+* **App 版**：`npm run build:android` → Android Studio 重新產生簽名 APK（用同一把 keystore）→ `adb install -r` 裝回手機
+
 ### ⚠️ 簽章（Signing）— 務必妥善保存 keystore
 
 Release APK **必須使用自建的簽章金鑰**，且日後每次更新版本都要用**同一把 keystore** 重新簽署，
